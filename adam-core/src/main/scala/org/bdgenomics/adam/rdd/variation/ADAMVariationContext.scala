@@ -75,13 +75,15 @@ class ADAMVariationContext(@transient val sc: SparkContext) extends Serializable
 
     // Initialize global header object required by Hadoop VCF Writer
     val header = variants.adamGetCallsetSamples()
-    val mp = variants.mapPartitions(iter => {
+    val mp = variants.mapPartitionsWithIndex((idx, iter) => {
+      println("*** setting ADAMVCFOutputFormat header on partition %d: %s".format(idx, header.mkString(",")))
       synchronized {
         // perform map partition call to ensure that the VCF header is set on all
         // nodes in the cluster; see:
         // https://github.com/bigdatagenomics/adam/issues/353
         ADAMVCFOutputFormat.setHeader(header)
       }
+      println("*** header set on partition %d!".format(idx))
       Iterator[Int]()
     }).count()
 

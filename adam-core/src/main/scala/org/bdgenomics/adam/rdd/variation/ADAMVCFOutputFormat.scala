@@ -27,10 +27,14 @@ object ADAMVCFOutputFormat extends Serializable {
 
   def getHeader: VCFHeader = header match {
     case Some(h) => h
-    case None    => setHeader(Seq())
+    case None => {
+      println("\t*** ADAMVCFOutputFormat.getHeader, empty!!!")
+      setHeader(Seq())
+    }
   }
 
   def setHeader(samples: Seq[String]): VCFHeader = {
+    println("\t*** ADAMVCFOutputFormat.setHeader: %s".format(samples.mkString))
     header = Some(new VCFHeader(
       (VariantAnnotationConverter.infoHeaderLines ++ VariantAnnotationConverter.formatHeaderLines).toSet: Set[VCFHeaderLine],
       samples))
