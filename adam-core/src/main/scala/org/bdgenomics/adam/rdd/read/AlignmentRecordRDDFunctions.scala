@@ -441,25 +441,95 @@ class AlignmentRecordRDDFunctions(rdd: RDD[AlignmentRecord])
   }
 
   /**
+   * Saves these AlignmentRecords to two FASTQ files: one for the first mate in each pair, and the other for the second.
+   *
+   * @param fileName1 Path at which to save a FASTQ file containing the first mate of each pair.
+   * @param fileName2 Path at which to save a FASTQ file containing the second mate of each pair.
+   * @param enforceAllReadsPaired Iff true, throw an exception if any read in this RDD is not accompanied by its mate.
+   */
+  def adamSaveAsPairedFastq(fileName1: String,
+                            fileName2: String,
+                            enforceAllReadsPaired: Boolean = false): Unit = {
+
+    val readsByID: RDD[(CharSequence, Iterable[AlignmentRecord])] =
+      rdd.groupBy(record => {
+        if (!AlignmentRecordConverter.readNameHasPairedSuffix(record))
+          record.getReadName.toString
+        else
+          record.getReadName.toString.dropRight(2)
+      })
+
+    if (enforceAllReadsPaired) {
+      val readIDsWithCounts: RDD[(CharSequence, Int)] = readsByID.mapValues(_.size)
+      val unpairedReadIDsWithCounts: RDD[(CharSequence, Int)] = readIDsWithCounts.filter(_._2 != 2)
+
+      val numUnpairedReadIDsWithCounts: Long = unpairedReadIDsWithCounts.count()
+      if (numUnpairedReadIDsWithCounts != 0) {
+        val readNameOccurrencesMap: collection.Map[Int, Long] = unpairedReadIDsWithCounts.map(_._2).countByValue()
+        throw new Exception(
+          "Found %d read names that don't occur exactly twice:\n%s\n\nSamples:\n%s".format(
+            numUnpairedReadIDsWithCounts,
+            readNameOccurrencesMap.map(p => "%dx:\t%d".format(p._1, p._2)).mkString("\t", "\n\t", ""),
+            unpairedReadIDsWithCounts.take(100).map(_._1).mkString("\t", "\n\t", "")
+          )
+        )
+      }
+    }
+
+    val pairedRecords: RDD[AlignmentRecord] = readsByID.filter(_._2.size == 2).map(_._2).flatMap(x => x)
+
+    val firstInPairRecords: RDD[AlignmentRecord] = pairedRecords.filter(_.getFirstOfPair)
+    val secondInPairRecords: RDD[AlignmentRecord] = pairedRecords.filter(!_.getFirstOfPair)
+
+    log.info(
+      "%d/%d records are properly paired: %d firsts, %d seconds".format(
+        pairedRecords.count(),
+        rdd.count(),
+        firstInPairRecords.count(),
+        secondInPairRecords.count()
+      )
+    )
+
+    val arc = new AlignmentRecordConverter
+
+    firstInPairRecords
+      .sortBy(_.getReadName.toString)
+      .map(record => arc.convertToFastq(record, maybeAddSuffix = true))
+      .saveAsTextFile(fileName1)
+
+    secondInPairRecords
+      .sortBy(_.getReadName.toString)
+      .map(record => arc.convertToFastq(record, maybeAddSuffix = true))
+      .saveAsTextFile(fileName2)
+
+  }
+
+  /**
    * Saves reads in FASTQ format.
    *
    * @param fileName Path to save files at.
    * @param sort Whether to sort the FASTQ files by read name or not. Defaults
    *             to false. Sorting the output will recover pair order, if desired.
    */
-  def adamSaveAsFastq(fileName: String, sort: Boolean = false) {
+  def adamSaveAsFastq(fileName: String,
+                      sort: Boolean = false,
+                      fileName2Opt: Option[String] = None,
+                      enforceAllReadsPaired: Boolean = false) {
     log.info("Saving data in FASTQ format.")
+    fileName2Opt match {
+      case Some(fileName2) => adamSaveAsPairedFastq(fileName, fileName2, enforceAllReadsPaired)
+      case _ =>
+        val arc = new AlignmentRecordConverter
 
-    val arc = new AlignmentRecordConverter
+        // sort the rdd if desired
+        val outputRdd = if (sort || fileName2Opt.isDefined) {
+          rdd.sortBy(_.getReadName.toString)
+        } else {
+          rdd
+        }
 
-    // sort the rdd if desired
-    val outputRdd = if (sort) {
-      rdd.sortBy(_.getReadName.toString)
-    } else {
-      rdd
+        // convert the rdd and save as a text file
+        outputRdd.map(record => arc.convertToFastq(record)).saveAsTextFile(fileName)
     }
-
-    // convert the rdd and save as a text file
-    outputRdd.map(record => arc.convertToFastq(record)).saveAsTextFile(fileName)
   }
 }
