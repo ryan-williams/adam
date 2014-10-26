@@ -460,7 +460,6 @@ class AlignmentRecordRDDFunctions(rdd: RDD[AlignmentRecord])
     }
 
     // convert the rdd and save as a text file
-    outputRdd.map(arc.convertToFastq)
-      .saveAsTextFile(fileName)
+    outputRdd.map(record => arc.convertToFastq(record)).saveAsTextFile(fileName)
   }
 }
