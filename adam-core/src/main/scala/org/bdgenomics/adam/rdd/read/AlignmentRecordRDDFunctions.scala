@@ -451,7 +451,10 @@ class AlignmentRecordRDDFunctions(rdd: RDD[AlignmentRecord])
                             fileName2: String,
                             enforceAllReadsPaired: Boolean = false): Unit = {
 
-    val readsByID: RDD[(CharSequence, Iterable[AlignmentRecord])] =
+    rdd.persist()
+    val numRecords = rdd.count()
+
+    val readsByID: RDD[(String, Iterable[AlignmentRecord])] =
       rdd.groupBy(record => {
         if (!AlignmentRecordConverter.readNameHasPairedSuffix(record))
           record.getReadName.toString
@@ -460,8 +463,9 @@ class AlignmentRecordRDDFunctions(rdd: RDD[AlignmentRecord])
       })
 
     if (enforceAllReadsPaired) {
-      val readIDsWithCounts: RDD[(CharSequence, Int)] = readsByID.mapValues(_.size)
-      val unpairedReadIDsWithCounts: RDD[(CharSequence, Int)] = readIDsWithCounts.filter(_._2 != 2)
+      val readIDsWithCounts: RDD[(String, Int)] = readsByID.mapValues(_.size)
+      val unpairedReadIDsWithCounts: RDD[(String, Int)] = readIDsWithCounts.filter(_._2 != 2)
+      unpairedReadIDsWithCounts.persist()
 
       val numUnpairedReadIDsWithCounts: Long = unpairedReadIDsWithCounts.count()
       if (numUnpairedReadIDsWithCounts != 0) {
@@ -476,17 +480,23 @@ class AlignmentRecordRDDFunctions(rdd: RDD[AlignmentRecord])
       }
     }
 
-    val pairedRecords: RDD[AlignmentRecord] = readsByID.filter(_._2.size == 2).map(_._2).flatMap(x => x)
+    val pairedRecords: RDD[AlignmentRecord] = readsByID.filter(_._2.size == 2).map(_._2).flatMap(x => x).persist()
+    val numPairedRecords = pairedRecords.count()
+    rdd.unpersist()
 
-    val firstInPairRecords: RDD[AlignmentRecord] = pairedRecords.filter(_.getFirstOfPair)
-    val secondInPairRecords: RDD[AlignmentRecord] = pairedRecords.filter(!_.getFirstOfPair)
+    val firstInPairRecords: RDD[AlignmentRecord] = pairedRecords.filter(_.getFirstOfPair).persist()
+    val numFirstInPairRecords = firstInPairRecords.count()
+
+    val secondInPairRecords: RDD[AlignmentRecord] = pairedRecords.filter(!_.getFirstOfPair).persist()
+    val numSecondInPairRecords = secondInPairRecords.count()
+    pairedRecords.unpersist()
 
     log.info(
       "%d/%d records are properly paired: %d firsts, %d seconds".format(
-        pairedRecords.count(),
-        rdd.count(),
-        firstInPairRecords.count(),
-        secondInPairRecords.count()
+        numPairedRecords,
+        numRecords,
+        numFirstInPairRecords,
+        numSecondInPairRecords
       )
     )
 
@@ -502,6 +512,8 @@ class AlignmentRecordRDDFunctions(rdd: RDD[AlignmentRecord])
       .map(record => arc.convertToFastq(record, maybeAddSuffix = true))
       .saveAsTextFile(fileName2)
 
+    firstInPairRecords.unpersist()
+    secondInPairRecords.unpersist()
   }
 
   /**
