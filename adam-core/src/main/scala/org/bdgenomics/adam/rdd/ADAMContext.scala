@@ -96,21 +96,33 @@ class ADAMContext(val sc: SparkContext) extends Serializable with Logging {
     RecordGroupDictionary.fromSAMHeader(samHeader)
   }
 
-  private[rdd] def adamParquetLoad[T <% SpecificRecord: Manifest, U <: UnboundRecordFilter](filePath: String, predicate: Option[Class[U]] = None, projection: Option[Schema] = None): RDD[T] = {
+  private[rdd] def adamParquetLoad[T <% SpecificRecord: Manifest, U <: UnboundRecordFilter](
+    filePath: String,
+    predicate: Option[Class[U]] = None,
+    projection: Option[Schema] = None): RDD[T] = {
+
     log.info("Reading the ADAM file at %s to create RDD".format(filePath))
     val job = HadoopUtil.newJob(sc)
     ParquetInputFormat.setReadSupportClass(job, classOf[AvroReadSupport[T]])
+
     if (predicate.isDefined) {
       log.info("Using the specified push-down predicate")
       ParquetInputFormat.setUnboundRecordFilter(job, predicate.get)
     }
+
     if (projection.isDefined) {
       log.info("Using the specified projection schema")
       AvroParquetInputFormat.setRequestedProjection(job, projection.get)
     }
-    val records = sc.newAPIHadoopFile(filePath,
-      classOf[ParquetInputFormat[T]], classOf[Void], manifest[T].runtimeClass.asInstanceOf[Class[T]],
-      ContextUtil.getConfiguration(job)).map(p => p._2)
+
+    val records = sc.newAPIHadoopFile(
+      filePath,
+      classOf[ParquetInputFormat[T]],
+      classOf[Void],
+      manifest[T].runtimeClass.asInstanceOf[Class[T]],
+      ContextUtil.getConfiguration(job)
+    ).map(p => p._2)
+
     if (predicate.isDefined) {
       // Strip the nulls that the predicate returns
       records.filter(p => p != null.asInstanceOf[T])
@@ -188,9 +200,10 @@ class ADAMContext(val sc: SparkContext) extends Serializable with Logging {
    * @tparam T The type of records to return
    * @return An RDD with records of the specified type
    */
-  def adamLoad[T <% SpecificRecord: Manifest, U <: ADAMPredicate[T]](filePath: String,
-                                                                     predicate: Option[Class[U]] = None,
-                                                                     projection: Option[Schema] = None): RDD[T] = {
+  def adamLoad[T <% SpecificRecord: Manifest, U <: ADAMPredicate[T]](
+    filePath: String,
+    predicate: Option[Class[U]] = None,
+    projection: Option[Schema] = None): RDD[T] = {
 
     if (filePath.endsWith(".bam") ||
       filePath.endsWith(".sam") && classOf[AlignmentRecord].isAssignableFrom(manifest[T].runtimeClass)) {

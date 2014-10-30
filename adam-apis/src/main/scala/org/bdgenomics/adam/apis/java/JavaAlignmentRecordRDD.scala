@@ -67,7 +67,7 @@ class JavaAlignmentRecordRDD(val jrdd: JavaRDD[AlignmentRecord]) extends Seriali
   }
 
   /**
-   * Saves this RDD to disk as a SAM/BAM file.
+   * Saves this RDD to disk as a SAM file.
    *
    * @param filePath Path to save the file at.
    */
