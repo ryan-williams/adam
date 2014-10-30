@@ -192,6 +192,10 @@ class ADAMContext(val sc: SparkContext) extends Serializable with Logging {
     }
   }
 
+  def applyPredicate[T <% SpecificRecord: Manifest, U <: ADAMPredicate[T]](reads: RDD[T],
+                                                                           predicateOpt: Option[Class[U]]): RDD[T] =
+    predicateOpt.map(_.newInstance()(reads)).getOrElse(reads)
+
   /**
    * This method will create a new RDD.
    * @param filePath The path to the input data
@@ -212,26 +216,17 @@ class ADAMContext(val sc: SparkContext) extends Serializable with Logging {
         log.warn("Projection is ignored when loading a BAM file")
       }
       val reads = AlignmentRecordContext.adamBamLoad(sc, filePath).asInstanceOf[RDD[T]]
-      if (predicate.isDefined) {
-        val predicateClass = predicate.get
-        val filter = predicateClass.newInstance()
-        filter(reads)
-      } else {
-        reads
-      }
+
+      applyPredicate(reads, predicate)
     } else if (filePath.endsWith(".ifq") && classOf[AlignmentRecord].isAssignableFrom(manifest[T].runtimeClass)) {
 
       if (projection.isDefined) {
         log.warn("Projection is ignored when loading an interleaved FASTQ file")
       }
       val reads = AlignmentRecordContext.adamInterleavedFastqLoad(sc, filePath).asInstanceOf[RDD[T]]
-      if (predicate.isDefined) {
-        val predicateClass = predicate.get
-        val filter = predicateClass.newInstance()
-        filter(reads)
-      } else {
-        reads
-      }
+
+      applyPredicate(reads, predicate)
+
     } else if ((filePath.endsWith(".fastq") || filePath.endsWith(".fq")) &&
       classOf[AlignmentRecord].isAssignableFrom(manifest[T].runtimeClass)) {
 
@@ -239,13 +234,9 @@ class ADAMContext(val sc: SparkContext) extends Serializable with Logging {
         log.warn("Projection is ignored when loading a FASTQ file")
       }
       val reads = AlignmentRecordContext.adamUnpairedFastqLoad(sc, filePath).asInstanceOf[RDD[T]]
-      if (predicate.isDefined) {
-        val predicateClass = predicate.get
-        val filter = predicateClass.newInstance()
-        filter(reads)
-      } else {
-        reads
-      }
+
+      applyPredicate(reads, predicate)
+
     } else {
       adamParquetLoad(filePath, predicate, projection)
     }
