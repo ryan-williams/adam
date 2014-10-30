@@ -163,8 +163,7 @@ class Transform(protected val args: TransformArgs) extends ADAMSparkCommand[Tran
       adamRecords.adamSaveAsFastq(args.outputPath, args.sortFastqOutput)
     } else {
       log.info("Saving data in ADAM format")
-      adamRecords.adamSave(args.outputPath, blockSize = args.blockSize, pageSize = args.pageSize,
-        compressCodec = args.compressionCodec, disableDictionaryEncoding = args.disableDictionary)
+      adamRecords.adamParquetSave(args)
     }
   }
 }

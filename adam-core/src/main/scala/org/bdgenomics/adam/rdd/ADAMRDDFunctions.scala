@@ -32,11 +32,34 @@ import parquet.hadoop.ParquetOutputFormat
 import parquet.hadoop.metadata.CompressionCodecName
 import parquet.hadoop.util.ContextUtil
 
+trait ADAMParquetArgs {
+  var blockSize: Int
+  var pageSize: Int
+  var compressionCodec: CompressionCodecName
+  var disableDictionaryEncoding: Boolean
+}
+
+trait ADAMSaveArgs extends ADAMParquetArgs {
+  var outputPath: String
+}
+
 class ADAMRDDFunctions[T <% SpecificRecord: Manifest](rdd: RDD[T]) extends Serializable {
 
-  def adamSave(filePath: String, blockSize: Int = 128 * 1024 * 1024,
-               pageSize: Int = 1 * 1024 * 1024, compressCodec: CompressionCodecName = CompressionCodecName.GZIP,
-               disableDictionaryEncoding: Boolean = false) {
+  def adamParquetSave(args: ADAMSaveArgs): Unit = {
+    adamParquetSave(
+      args.outputPath,
+      args.blockSize,
+      args.pageSize,
+      args.compressionCodec,
+      args.disableDictionaryEncoding
+    )
+  }
+
+  def adamParquetSave(filePath: String,
+                      blockSize: Int = 128 * 1024 * 1024,
+                      pageSize: Int = 1 * 1024 * 1024,
+                      compressCodec: CompressionCodecName = CompressionCodecName.GZIP,
+                      disableDictionaryEncoding: Boolean = false): Unit = {
     val job = HadoopUtil.newJob(rdd.context)
     ParquetLogger.hadoopLoggerLevel(Level.SEVERE)
     ParquetOutputFormat.setCompression(job, compressCodec)
