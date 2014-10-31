@@ -43,6 +43,10 @@ trait ADAMSaveArgs extends ADAMParquetArgs {
   var outputPath: String
 }
 
+trait ADAMSaveAnyArgs extends ADAMSaveArgs {
+  var sortFastqOutput: Boolean
+}
+
 class ADAMRDDFunctions[T <% SpecificRecord: Manifest](rdd: RDD[T]) extends Serializable {
 
   def adamParquetSave(args: ADAMSaveArgs): Unit = {

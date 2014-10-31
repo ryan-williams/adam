@@ -30,7 +30,7 @@ import org.bdgenomics.adam.algorithms.consensus.{
 import org.bdgenomics.adam.converters.AlignmentRecordConverter
 import org.bdgenomics.adam.models._
 import org.bdgenomics.adam.rdd.ADAMContext._
-import org.bdgenomics.adam.rdd.{ ADAMParquetArgs, ADAMSequenceDictionaryRDDAggregator }
+import org.bdgenomics.adam.rdd.{ ADAMSaveAnyArgs, ADAMSequenceDictionaryRDDAggregator }
 import org.bdgenomics.adam.rdd.read.AlignmentRecordContext._
 import org.bdgenomics.adam.rdd.read.correction.{ ErrorCorrection, TrimReads }
 import org.bdgenomics.adam.rdd.read.realignment.RealignIndels
@@ -62,6 +62,23 @@ class AlignmentRecordRDDFunctions(rdd: RDD[AlignmentRecord])
         rec.getStart < query.end &&
         rec.getEnd > query.start
     rdd.filter(overlapsQuery)
+  }
+
+  def adamSave(args: ADAMSaveAnyArgs) = {
+    if (args.outputPath.endsWith(".sam")) {
+      log.info("Saving data in SAM format")
+      rdd.adamSAMSave(args.outputPath)
+    } else if (args.outputPath.endsWith(".bam")) {
+      log.info("Saving data in BAM format")
+      rdd.adamSAMSave(args.outputPath, asSam = false)
+    } else if (args.outputPath.endsWith(".fq") || args.outputPath.endsWith(".fastq") ||
+      args.outputPath.endsWith(".ifq")) {
+      log.info("Saving data in FASTQ format.")
+      rdd.adamSaveAsFastq(args.outputPath, args.sortFastqOutput)
+    } else {
+      log.info("Saving data in ADAM format")
+      rdd.adamParquetSave(args)
+    }
   }
 
   /**
