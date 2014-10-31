@@ -196,6 +196,24 @@ class ADAMContext(val sc: SparkContext) extends Serializable with Logging {
                                                                            predicateOpt: Option[Class[U]]): RDD[T] =
     predicateOpt.map(_.newInstance()(reads)).getOrElse(reads)
 
+  private[rdd] def adamBamLoad(filePath: String): RDD[AlignmentRecord] = {
+    log.info("Reading legacy BAM file format %s to create RDD".format(filePath))
+
+    // We need to separately read the header, so that we can inject the sequence dictionary
+    // data into each individual Read (see the argument to samRecordConverter.convert,
+    // below).
+    val samHeader = SAMHeaderReader.readSAMHeaderFrom(new Path(filePath), sc.hadoopConfiguration)
+    val seqDict = adamBamDictionaryLoad(samHeader)
+    val readGroups = adamBamLoadReadGroups(samHeader)
+
+    val job = HadoopUtil.newJob(sc)
+    val records = sc.newAPIHadoopFile(filePath, classOf[AnySAMInputFormat], classOf[LongWritable],
+      classOf[SAMRecordWritable], ContextUtil.getConfiguration(job))
+    val samRecordConverter = new SAMRecordConverter
+
+    records.map(p => samRecordConverter.convert(p._2.get, seqDict, readGroups))
+  }
+
   /**
    * This method will create a new RDD.
    * @param filePath The path to the input data
@@ -215,9 +233,11 @@ class ADAMContext(val sc: SparkContext) extends Serializable with Logging {
       if (projection.isDefined) {
         log.warn("Projection is ignored when loading a BAM file")
       }
-      val reads = AlignmentRecordContext.adamBamLoad(sc, filePath).asInstanceOf[RDD[T]]
+
+      val reads = adamBamLoad(filePath).asInstanceOf[RDD[T]]
 
       applyPredicate(reads, predicate)
+
     } else if (filePath.endsWith(".ifq") && classOf[AlignmentRecord].isAssignableFrom(manifest[T].runtimeClass)) {
 
       if (projection.isDefined) {
