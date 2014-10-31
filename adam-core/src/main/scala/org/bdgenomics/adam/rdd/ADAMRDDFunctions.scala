@@ -47,7 +47,7 @@ trait ADAMSaveAnyArgs extends ADAMSaveArgs {
   var sortFastqOutput: Boolean
 }
 
-class ADAMRDDFunctions[T <% SpecificRecord: Manifest](rdd: RDD[T]) extends Serializable {
+class ADAMRDDFunctions[T <% SpecificRecord: Manifest](rdd: RDD[T]) extends Serializable with Logging {
 
   def adamParquetSave(args: ADAMSaveArgs): Unit = {
     adamParquetSave(
@@ -64,6 +64,8 @@ class ADAMRDDFunctions[T <% SpecificRecord: Manifest](rdd: RDD[T]) extends Seria
                       pageSize: Int = 1 * 1024 * 1024,
                       compressCodec: CompressionCodecName = CompressionCodecName.GZIP,
                       disableDictionaryEncoding: Boolean = false): Unit = {
+    log.info("Saving data in ADAM format")
+
     val job = HadoopUtil.newJob(rdd.context)
     ParquetLogger.hadoopLoggerLevel(Level.SEVERE)
     ParquetOutputFormat.setCompression(job, compressCodec)
