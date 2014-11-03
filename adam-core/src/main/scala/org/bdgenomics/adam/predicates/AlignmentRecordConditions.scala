@@ -23,12 +23,12 @@ import org.bdgenomics.formats.avro.AlignmentRecord
 
 object AlignmentRecordConditions {
 
-  val isMapped = RecordCondition[AlignmentRecord](FieldCondition(AlignmentRecordField.readMapped.toString(), PredicateUtils.isTrue))
-  val isUnique = RecordCondition[AlignmentRecord](FieldCondition(AlignmentRecordField.duplicateRead.toString(), PredicateUtils.isFalse))
+  val isMapped = RecordCondition[AlignmentRecord](FieldCondition(AlignmentRecordField.readMapped.toString(), PredicateUtils(true)))
+  val isUnique = RecordCondition[AlignmentRecord](FieldCondition(AlignmentRecordField.duplicateRead.toString(), PredicateUtils(false)))
 
-  val isPrimaryAlignment = RecordCondition[AlignmentRecord](FieldCondition(AlignmentRecordField.primaryAlignment.toString(), PredicateUtils.isTrue))
+  val isPrimaryAlignment = RecordCondition[AlignmentRecord](FieldCondition(AlignmentRecordField.primaryAlignment.toString(), PredicateUtils(true)))
 
-  val passedVendorQualityChecks = RecordCondition[AlignmentRecord](FieldCondition(AlignmentRecordField.failedVendorQualityChecks.toString(), PredicateUtils.isFalse))
+  val passedVendorQualityChecks = RecordCondition[AlignmentRecord](FieldCondition(AlignmentRecordField.failedVendorQualityChecks.toString(), PredicateUtils(false)))
 
   def isHighQuality(minQuality: Int) = RecordCondition[AlignmentRecord](FieldCondition(AlignmentRecordField.mapq.toString(), (x: Int) => x > minQuality))
 
