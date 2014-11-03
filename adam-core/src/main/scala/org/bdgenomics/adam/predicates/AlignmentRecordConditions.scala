@@ -23,6 +23,27 @@ import org.bdgenomics.formats.avro.AlignmentRecord
 
 object AlignmentRecordConditions {
 
+  val bitToField: Map[Int, (AlignmentRecordField.Value, Boolean)] = Map(
+    0x1 -> (AlignmentRecordField.readPaired, true),
+    0x2 -> (AlignmentRecordField.properPair, true),
+    0x4 -> (AlignmentRecordField.readMapped, false),
+    0x8 -> (AlignmentRecordField.mateMapped, false),
+    0x10 -> (AlignmentRecordField.readNegativeStrand, true),
+    0x20 -> (AlignmentRecordField.mateNegativeStrand, true),
+    0x40 -> (AlignmentRecordField.firstOfPair, true),
+    0x80 -> (AlignmentRecordField.secondOfPair, false),
+    0x100 -> (AlignmentRecordField.primaryAlignment, false),
+    0x200 -> (AlignmentRecordField.failedVendorQualityChecks, true),
+    0x400 -> (AlignmentRecordField.duplicateRead, true),
+    0x800 -> (AlignmentRecordField.supplmentaryAlignment, true)
+  )
+
+  def conditionsForBits(n: Int, expectedValue: Boolean = true): RecordCondition[AlignmentRecord] = {
+    RecordCondition(bitToField.map {
+      case (bit, (field, value)) => FieldCondition(field, ((n & bit) > 0) == expectedValue)
+    }.toSeq: _*)
+  }
+
   def apply(field: AlignmentRecordField.Value, bool: Boolean = true): RecordCondition[AlignmentRecord] = {
     RecordCondition[AlignmentRecord](FieldCondition(field, bool))
   }

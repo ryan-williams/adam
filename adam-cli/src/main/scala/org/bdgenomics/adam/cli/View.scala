@@ -20,6 +20,7 @@ package org.bdgenomics.adam.cli
 import org.apache.hadoop.mapreduce.Job
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
+import org.bdgenomics.adam.predicates.{ AlignmentRecordConditions, RecordCondition, ADAMPredicate }
 import org.bdgenomics.adam.projections.{ AlignmentRecordField, Projection }
 import org.bdgenomics.adam.rdd.ADAMSaveArgs
 import org.bdgenomics.adam.rdd.read.AlignmentRecordContext._
@@ -62,54 +63,16 @@ object View extends ADAMCommandCompanion {
 class View(val args: ViewArgs) extends ADAMSparkCommand[ViewArgs] {
   val companion = View
 
-  type ReadFilter = (AlignmentRecord => Boolean)
-
-  def getFilters(n: Int, filterTrue: Boolean = true): List[ReadFilter] = {
-    def getFilter(bit: Int, fn: ReadFilter): Option[ReadFilter] =
-      if ((n & bit) > 0)
-        Some(
-          fn(_) == filterTrue)
-      else
-        None
-
-    List(
-      getFilter(0x1, _.getReadPaired),
-      getFilter(0x2, _.getProperPair),
-      getFilter(0x4, !_.getReadMapped),
-      getFilter(0x8, !_.getMateMapped),
-      getFilter(0x10, _.getReadNegativeStrand),
-      getFilter(0x20, _.getMateNegativeStrand),
-      getFilter(0x40, _.getFirstOfPair),
-      getFilter(0x80, _.getSecondOfPair),
-      getFilter(0x100, _.getFailedVendorQualityChecks),
-      getFilter(0x200, _.getDuplicateRead),
-      getFilter(0x400, _.getDuplicateRead),
-      getFilter(0x800, _.getSupplementaryAlignment)
-    ).flatten
-  }
-
   def run(sc: SparkContext, job: Job) = {
 
-    val projection = Projection(
-      AlignmentRecordField.readPaired,
-      AlignmentRecordField.properPair,
-      AlignmentRecordField.readMapped,
-      AlignmentRecordField.mateMapped,
-      AlignmentRecordField.firstOfPair,
-      AlignmentRecordField.secondOfPair,
-      AlignmentRecordField.failedVendorQualityChecks,
-      AlignmentRecordField.duplicateRead
-    )
-
-    var reads: RDD[AlignmentRecord] = sc.adamLoad(args.inputPath, projection = Some(projection))
-
-    val filters: List[ReadFilter] = getFilters(args.matchAllBits)
-    val notFilters: List[ReadFilter] = getFilters(args.matchNoBits, filterTrue = false)
-    val allFilters = filters ++ notFilters
-
-    if (allFilters.nonEmpty) {
-      reads = reads.filter(read => filters.forall(_(read)))
+    class FilterFlagBitsPredicate extends ADAMPredicate[AlignmentRecord] {
+      override val recordCondition =
+        AlignmentRecordConditions.conditionsForBits(args.matchAllBits) &&
+          AlignmentRecordConditions.conditionsForBits(args.matchNoBits, false)
     }
+
+    val predicate = Some(classOf[FilterFlagBitsPredicate])
+    var reads: RDD[AlignmentRecord] = sc.adamLoad(args.inputPath, predicate = predicate)
 
     reads.adamAlignedRecordSave(args)
   }
