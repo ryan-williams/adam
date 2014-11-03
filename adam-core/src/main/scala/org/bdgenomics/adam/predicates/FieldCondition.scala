@@ -38,6 +38,7 @@ import parquet.column.ColumnReader
 import parquet.filter.UnboundRecordFilter
 import parquet.filter.ColumnRecordFilter._
 import org.bdgenomics.adam.predicates.ColumnReaderInput.ColumnReaderInput
+import org.bdgenomics.adam.projections.AlignmentRecordField
 import scala.Predef._
 
 object ColumnReaderInput extends Serializable {
@@ -75,4 +76,12 @@ private[predicates] case class FieldCondition[T](fieldName: String,
 
   def columnFilter: UnboundRecordFilter = column(fieldName, this)
 
+}
+
+private[predicates] object FieldCondition {
+
+  def apply(field: AlignmentRecordField.Value,
+            filterValue: Boolean)(implicit converter: ColumnReaderInput[Boolean]): FieldCondition[Boolean] = {
+    FieldCondition(field.toString, PredicateUtils(filterValue))
+  }
 }
