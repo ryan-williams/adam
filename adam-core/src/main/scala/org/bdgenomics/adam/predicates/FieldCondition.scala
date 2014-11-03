@@ -61,7 +61,9 @@ object ColumnReaderInput extends Serializable {
   }
 }
 
-private[predicates] case class FieldCondition[T](val fieldName: String, filter: T => Boolean)(implicit converter: ColumnReaderInput[T]) extends Predicate {
+private[predicates] case class FieldCondition[T](fieldName: String,
+                                                 filter: T => Boolean)(implicit converter: ColumnReaderInput[T])
+    extends Predicate {
 
   def apply(input: Any): Boolean = {
     filter(input.asInstanceOf[T])
