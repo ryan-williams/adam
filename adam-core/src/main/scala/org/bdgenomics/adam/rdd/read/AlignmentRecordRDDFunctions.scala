@@ -138,6 +138,7 @@ class AlignmentRecordRDDFunctions(rdd: RDD[AlignmentRecord])
     asSam match {
       case true  =>
         ADAMSAMOutputFormat.addHeader(header)
+        withKey.foreachPartition(_ => ADAMBAMOutputFormat.addHeader(header))
         withKey.saveAsNewAPIHadoopFile(
           filePath,
           classOf[LongWritable],
@@ -147,6 +148,7 @@ class AlignmentRecordRDDFunctions(rdd: RDD[AlignmentRecord])
         )
       case false =>
         ADAMBAMOutputFormat.addHeader(header)
+        withKey.foreachPartition(_ => ADAMBAMOutputFormat.addHeader(header))
         withKey.saveAsNewAPIHadoopFile(
           filePath,
           classOf[LongWritable],
