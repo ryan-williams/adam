@@ -131,16 +131,13 @@ class AlignmentRecordRDDFunctions(rdd: RDD[AlignmentRecord])
     // add keys to our records
     val withKey = convertRecords.keyBy(v => new LongWritable(v.get.getAlignmentStart))
 
-    // attach header to output format
-    asSam match {
-      case true  => ADAMSAMOutputFormat.addHeader(header)
-      case false => ADAMBAMOutputFormat.addHeader(header)
-    }
-
     // write file to disk
     val conf = rdd.context.hadoopConfiguration
+
+    // attach header to output format
     asSam match {
-      case true =>
+      case true  =>
+        ADAMSAMOutputFormat.addHeader(header)
         withKey.saveAsNewAPIHadoopFile(
           filePath,
           classOf[LongWritable],
@@ -149,6 +146,7 @@ class AlignmentRecordRDDFunctions(rdd: RDD[AlignmentRecord])
           conf
         )
       case false =>
+        ADAMBAMOutputFormat.addHeader(header)
         withKey.saveAsNewAPIHadoopFile(
           filePath,
           classOf[LongWritable],
