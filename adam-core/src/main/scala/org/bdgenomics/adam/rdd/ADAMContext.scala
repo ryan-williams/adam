@@ -74,6 +74,9 @@ object ADAMContext {
   // Add implicits for the rich adam objects
   implicit def recordToRichRecord(record: AlignmentRecord): RichAlignmentRecord = new RichAlignmentRecord(record)
 
+  implicit def recordToRegion(r: AlignmentRecord): ReferenceRegion = ReferenceRegion(r)
+  implicit def featureToRegion(f: Feature): ReferenceRegion = ReferenceRegion(f)
+
   // implicit java to scala type conversions
   implicit def listToJavaList[A](list: List[A]): java.util.List[A] = seqAsJavaList(list)
 
@@ -249,8 +252,12 @@ class ADAMContext(val sc: SparkContext) extends Serializable with Logging {
           val rg = adamBamLoadReadGroups(samHeader)
           Some((sd, rg))
         } catch {
-          case _: Throwable => {
-            log.error("Loading failed for " + fp)
+          case e: Exception => {
+            val st = e.getStackTrace.mkString("\n")
+            val cause = Option(e.getCause).map(_.getStackTrace.toString).getOrElse("---")
+            log.error(
+              s"Loading failed for $fp: ${e.getMessage}\n$st\n$cause"
+            )
             None
           }
         }
