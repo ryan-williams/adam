@@ -20,5 +20,5 @@ else
 fi
 
 mvn versions:set -DgenerateBackupPoms=false -DnewVersion="$sha"
-mvn install -Dmaven.test.skip -DskipTests -Plocal
+mvn install -DskipTests -Plocal
 
