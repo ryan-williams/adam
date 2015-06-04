@@ -1,6 +1,27 @@
 ADAM
 ====
 
+# Note
+This fork of ADAM contains SHAs that are depended on by various versions of [hammerlab/pageant](https://github.com/hammerlab/pageant).
+
+To checkout and install a given commit, e.g. [c547d9c](https://github.com/ryan-williams/adam/commit/c547d9c98ca5fe239de6cead18633c5257a26c5f):
+
+```
+$ ./install-sha c547d9c98ca5fe239de6cead18633c5257a26c5f
+
+# sets all POM versions to the current SHA, and installs it.
+$ ./install-sha
+```
+
+The `install-sha` script basically does:
+
+```
+$ git checkout c547d9c98ca5fe239de6cead18633c5257a26c5f
+$ mvn versions:set -DgenerateBackupPoms=false -DnewVersion=c547d9c98ca5fe239de6cead18633c5257a26c5f
+$ mvn install -Dmaven.test.skip -DskipTests -Plocal
+```
+
+
 # Introduction
 
 * Follow our Twitter account at [https://twitter.com/bigdatagenomics/](https://twitter.com/bigdatagenomics/)
