@@ -25,7 +25,9 @@ import org.apache.hadoop.mapreduce.OutputFormat
 
 object ADAMSAMOutputFormat extends Serializable {
 
-  private[read] var header: Option[SAMFileHeader] = None
+  println(s"Init ADAMSAMOutputFormat: $this")
+
+  private var header: Option[SAMFileHeader] = None
 
   /**
    * Attaches a header to the ADAMSAMOutputFormat Hadoop writer. If a header has previously
@@ -39,6 +41,7 @@ object ADAMSAMOutputFormat extends Serializable {
    */
   def addHeader(samHeader: SAMFileHeader) {
     assert(header.isEmpty, "Cannot attach a new SAM header without first clearing the header.")
+    println(s"add header: $samHeader")
     header = Some(samHeader)
   }
 
@@ -48,6 +51,7 @@ object ADAMSAMOutputFormat extends Serializable {
    * @see addHeader
    */
   def clearHeader() {
+    println(s"clear header: $header")
     header = None
   }
 
@@ -58,14 +62,16 @@ object ADAMSAMOutputFormat extends Serializable {
    */
   private[read] def getHeader: SAMFileHeader = {
     assert(header.isDefined, "Cannot return header if not attached.")
+    println(s"$this return header: $header")
     header.get
   }
 }
 
 class ADAMSAMOutputFormat[K]
     extends KeyIgnoringAnySAMOutputFormat[K](SAMFormat.valueOf("SAM")) with Serializable {
-
-  setSAMHeader(ADAMSAMOutputFormat.getHeader)
+  val h = ADAMSAMOutputFormat.getHeader
+  println(s"got header: $h from $ADAMSAMOutputFormat")
+  setSAMHeader(h)
 }
 
 class InstrumentedADAMSAMOutputFormat[K] extends InstrumentedOutputFormat[K, org.seqdoop.hadoop_bam.SAMRecordWritable] {

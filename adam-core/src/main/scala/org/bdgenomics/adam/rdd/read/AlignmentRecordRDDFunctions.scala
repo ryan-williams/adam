@@ -69,7 +69,7 @@ class AlignmentRecordRDDFunctions(rdd: RDD[AlignmentRecord])
                    isSorted: Boolean = false): Boolean = {
     if (args.outputPath.endsWith(".sam")) {
       log.info("Saving data in SAM format")
-      rdd.adamSAMSave(args.outputPath, asSingleFile = args.asSingleFile)
+      rdd.adamSAMSave(args.outputPath, isSorted = isSorted, asSingleFile = args.asSingleFile)
       true
     } else if (args.outputPath.endsWith(".bam")) {
       log.info("Saving data in BAM format")
@@ -129,6 +129,7 @@ class AlignmentRecordRDDFunctions(rdd: RDD[AlignmentRecord])
                   asSingleFile: Boolean = false,
                   isSorted: Boolean = false) = SAMSave.time {
 
+    println(s"adamSAMSave: $isSorted")
     // convert the records
     val (convertRecords: RDD[SAMRecordWritable], header: SAMFileHeader) = rdd.adamConvertToSAM(isSorted)
 
@@ -151,11 +152,11 @@ class AlignmentRecordRDDFunctions(rdd: RDD[AlignmentRecord])
           case true =>
             ADAMSAMOutputFormat.clearHeader()
             ADAMSAMOutputFormat.addHeader(header)
-            log.info(s"Set SAM header for partition $idx")
+            println(s"Set SAM header for partition $idx: $header")
           case false =>
             ADAMBAMOutputFormat.clearHeader()
             ADAMBAMOutputFormat.addHeader(header)
-            log.info(s"Set BAM header for partition $idx")
+            println(s"Set BAM header for partition $idx: $header")
         }
       }
       Iterator[Int]()
@@ -171,13 +172,15 @@ class AlignmentRecordRDDFunctions(rdd: RDD[AlignmentRecord])
       case true =>
         ADAMSAMOutputFormat.clearHeader()
         ADAMSAMOutputFormat.addHeader(header)
-        log.info(s"Set SAM header on driver")
+        println(s"Set SAM header on driver")
+        println(s"set header: ${header.getAttribute("SO")} ${header.getSortOrder} $header")
       case false =>
         ADAMBAMOutputFormat.clearHeader()
         ADAMBAMOutputFormat.addHeader(header)
-        log.info(s"Set BAM header on driver")
+        println(s"Set BAM header on driver")
     }
 
+    println(s"before: ${ADAMSAMOutputFormat.getHeader}")
     // write file to disk
     val conf = rdd.context.hadoopConfiguration
     asSam match {
@@ -198,8 +201,9 @@ class AlignmentRecordRDDFunctions(rdd: RDD[AlignmentRecord])
           conf
         )
     }
+    println(s"middle: ${ADAMSAMOutputFormat.getHeader}")
     if (asSingleFile) {
-      log.info(s"Writing single ${if (asSam) "SAM" else "BAM"} file (not Hadoop-style directory)")
+      println(s"Writing single ${if (asSam) "SAM" else "BAM"} file (not Hadoop-style directory)")
       val conf = new Configuration()
       val fs = FileSystem.get(conf)
       val ouputParentDir = filePath.substring(0, filePath.lastIndexOf("/") + 1)
@@ -208,6 +212,7 @@ class AlignmentRecordRDDFunctions(rdd: RDD[AlignmentRecord])
       fs.delete(new Path(filePath), true)
       fs.rename(new Path(tmpPath), new Path(filePath))
     }
+    println(s"after: ${ADAMSAMOutputFormat.getHeader}")
   }
 
   def getSequenceRecordsFromElement(elem: AlignmentRecord): scala.collection.Set[SequenceRecord] = {
@@ -245,6 +250,7 @@ class AlignmentRecordRDDFunctions(rdd: RDD[AlignmentRecord])
     val header = adamRecordConverter.createSAMHeader(sd, rgd)
 
     if (isSorted) {
+      println("setting sort header")
       header.setSortOrder(SAMFileHeader.SortOrder.coordinate)
     }
 
