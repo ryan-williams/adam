@@ -451,7 +451,7 @@
       <dependency>
         <groupId>org.seqdoop</groupId>
         <artifactId>hadoop-bam</artifactId>
-        <version>7.0.0</version>
+        <version>97e523e</version>
         <exclusions>
           <exclusion>
             <groupId>org.seqdoop</groupId>
