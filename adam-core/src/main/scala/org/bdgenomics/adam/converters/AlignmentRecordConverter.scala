@@ -21,17 +21,20 @@ import htsjdk.samtools.{ SAMFileHeader, SAMRecord }
 import org.bdgenomics.adam.instrumentation.Timers._
 import org.bdgenomics.adam.models._
 import org.bdgenomics.adam.rich.RichAlignmentRecord
-import org.bdgenomics.formats.avro.AlignmentRecord
+import org.bdgenomics.formats.avro.{ AlignmentRecord, Fragment, Sequence }
+import scala.collection.JavaConversions._
 
 class AlignmentRecordConverter extends Serializable {
 
   /**
    * Converts a single record to FASTQ. FASTQ format is:
    *
+   * {{{
    * @readName
    * sequence
    * +<optional readname>
    * ASCII quality scores
+   * }}}
    *
    * @param adamRecord Read to convert to FASTQ.
    * @return Returns this read in string form.
@@ -196,6 +199,64 @@ class AlignmentRecordConverter extends Serializable {
     rgd.recordGroups.foreach(group => samHeader.addReadGroup(group.toSAMReadGroupRecord()))
 
     samHeader
+  }
+
+  /**
+   * Converts a fragment to a set of reads.
+   *
+   * @param fragment Fragment to convert.
+   * @return The collection of alignments described by the fragment. If the fragment
+   *         doesn't contain any alignments, this method will return one unaligned
+   *         AlignmentRecord per sequence in the Fragment.
+   */
+  def convertFragment(fragment: Fragment): Iterable[AlignmentRecord] = {
+    val sequences: List[Sequence] = asScalaBuffer(fragment.getSequences).toList
+    require(sequences.nonEmpty, "Fragment %s contains no sequences.".format(fragment))
+
+    // create fragment builders
+    val builders = if (fragment.getAlignments.isEmpty) {
+      List.tabulate(sequences.length)(id =>
+        AlignmentRecord.newBuilder()
+          .setSequence(sequences(id).getBases)
+          .setQual(sequences(id).getQualities)
+          .setReadNum(id))
+    } else {
+      val alignments: List[AlignmentRecord] = asScalaBuffer(fragment.getAlignments).toList
+      alignments.map(r => {
+        require(r.getReadNum != null, "Read number is null for read %s in fragment %s.".format(
+          r, fragment))
+        val (seq, qual) = if (r.getReadNegativeStrand) {
+          (Alphabet.dna.reverseComplement(sequences(r.getReadNum).getBases,
+            (c: Char) => Symbol('N', 'N')),
+            sequences(r.getReadNum).getQualities.reverse)
+        } else {
+          (sequences(r.getReadNum).getBases,
+            sequences(r.getReadNum).getQualities)
+        }
+        AlignmentRecord.newBuilder(r)
+          .setSequence(seq)
+          .setQual(qual)
+      })
+    }
+
+    // finish building fragments
+    builders.map(b => {
+      b.setReadPaired(sequences.size > 1)
+
+      Option(fragment.getReadName).foreach(rn => {
+        b.setReadName(rn)
+      })
+
+      Option(fragment.getInstrument).foreach(i => {
+        b.setRecordGroupPlatformUnit(i)
+      })
+
+      Option(fragment.getRunId).foreach(rid => {
+        b.setRecordGroupName(rid)
+      })
+
+      b.build()
+    })
   }
 }
 
