@@ -252,15 +252,15 @@ class ADAMContextSuite extends ADAMFunSuite {
   sparkTest("can read a small .vcf file") {
     val path = ClassLoader.getSystemClassLoader.getResource("small.vcf").getFile
 
-    val vcs: RDD[VariantContext] = sc.loadGenotypes(path).toVariantContext
-    assert(vcs.count === 5)
+    val vcs = sc.loadGenotypes(path).toVariantContext.collect.sortBy(_.position)
+    assert(vcs.size === 5)
 
-    val vc = vcs.first
+    val vc = vcs.head
     assert(vc.genotypes.size === 3)
 
     val gt = vc.genotypes.head
     assert(gt.getVariantCallingAnnotations != null)
-    assert(gt.getReadDepth === 15)
+    assert(gt.getReadDepth === 20)
   }
 
   (1 to 4) foreach { testNumber =>
