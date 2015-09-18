@@ -161,8 +161,8 @@ class SequenceDictionarySuite extends ADAMFunSuite {
     assert(dict(str1).get.name === "chr1")
   }
 
-  def record(name: String, length: Long = 1000, url: Option[String] = None, md5: Option[String] = None): SequenceRecord =
-    new SequenceRecord(name, length, url = url, md5 = md5)
+  def record(name: String, length: Long = 1000, md5: Option[String] = None): SequenceRecord =
+    SequenceRecord(name, length).copy(md5 = md5)
 
   test("convert from sam sequence record and back") {
     val sr = new SAMSequenceRecord("chr0", 1000)

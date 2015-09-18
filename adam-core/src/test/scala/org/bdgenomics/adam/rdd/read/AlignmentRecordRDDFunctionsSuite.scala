@@ -212,7 +212,25 @@ class AlignmentRecordRDDFunctionsSuite extends ADAMFunSuite {
     reads.adamSortReadsByReferencePosition().adamSAMSave(actualSortedPath, isSorted = true, asSingleFile = true)
 
     checkFiles(resourcePath("sorted.sam"), actualSortedPath)
+  }
 
+  sparkTest("writing unordered sam from unordered sam") {
+    val unsortedPath = resourcePath("unordered.sam")
+    val reads = sc.loadBam(unsortedPath)
 
+    val actualUnorderedPath = tmpFile("unordered.sam")
+    reads.adamSAMSave(actualUnorderedPath, isSorted = false, asSingleFile = true)
+
+    checkFiles(unsortedPath, actualUnorderedPath)
+  }
+
+  sparkTest("writing ordered sam from unordered sam") {
+    val unsortedPath = resourcePath("unordered.sam")
+    val reads = sc.loadBam(unsortedPath).adamSortReadsByReferencePosition
+
+    val actualSortedPath = tmpFile("ordered.sam")
+    reads.adamSAMSave(actualSortedPath, isSorted = true, asSingleFile = true)
+
+    checkFiles(resourcePath("ordered.sam"), actualSortedPath)
   }
 }

@@ -158,7 +158,7 @@ class VariantContextConverterSuite extends ADAMFunSuite {
     val converter = new VariantContextConverter
 
     val gatkVC = converter.convert(vc)
-    assert(gatkVC.getChr === "1")
+    assert(gatkVC.getContig === "1")
     assert(gatkVC.getStart === 1)
     assert(gatkVC.getEnd === 1)
     assert(gatkVC.getReference === Allele.create("A", true))
@@ -174,7 +174,7 @@ class VariantContextConverterSuite extends ADAMFunSuite {
     val converter = new VariantContextConverter(dict = Some(dictionary))
 
     val gatkVC = converter.convert(vc)
-    assert(gatkVC.getChr === "1")
+    assert(gatkVC.getContig === "1")
   }
 
   test("Convert ADAM SNV w/ genotypes to GATK") {
