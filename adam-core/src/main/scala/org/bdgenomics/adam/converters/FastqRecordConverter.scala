@@ -74,7 +74,9 @@ class FastqRecordConverter extends Serializable with Logging {
         .build())
   }
 
-  def convertRead(element: (Void, Text)): AlignmentRecord = {
+  def convertRead(element: (Void, Text),
+                  setFirstOfPair: Boolean = false,
+                  setSecondOfPair: Boolean = false): AlignmentRecord = {
     val lines = element._2.toString.split('\n')
     assert(lines.length == 4, "Record has wrong format:\n" + element._2.toString)
 
@@ -90,10 +92,10 @@ class FastqRecordConverter extends Serializable with Logging {
       .setReadName(readName)
       .setSequence(readSequence)
       .setQual(readQualities)
-      .setReadPaired(false)
+      .setReadPaired(setFirstOfPair || setSecondOfPair)
       .setProperPair(null)
-      .setFirstOfPair(null)
-      .setSecondOfPair(null)
+      .setFirstOfPair(setFirstOfPair)
+      .setSecondOfPair(setSecondOfPair)
       .setReadNegativeStrand(null)
       .setMateNegativeStrand(null)
       .setPrimaryAlignment(null)
