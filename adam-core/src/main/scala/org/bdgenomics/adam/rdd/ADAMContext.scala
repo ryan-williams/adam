@@ -229,11 +229,8 @@ class ADAMContext(val sc: SparkContext) extends Serializable with Logging {
     }
   }
 
-  def loadBam(
-    filePath: String): RDD[AlignmentRecord] = {
-
+  def loadBam(filePath: String): RDD[AlignmentRecord] = {
     val path = new Path(filePath)
-
     val fs =
       Option(
         FileSystem.get(path.toUri, sc.hadoopConfiguration)
