@@ -84,6 +84,7 @@ case class FlagStatMetrics(total: Long, duplicatesPrimary: DuplicateMetrics, dup
 object FlagStat {
 
   def b2i(boolean: Boolean) = if (boolean) 1 else 0
+  def b(boolean: java.lang.Boolean) = Option(boolean).exists(x => x)
 
   def apply(rdd: RDD[AlignmentRecord]) = {
     rdd.map {
@@ -93,15 +94,15 @@ object FlagStat {
         val (primaryDuplicates, secondaryDuplicates) = DuplicateMetrics(p)
         new FlagStatMetrics(1,
           primaryDuplicates, secondaryDuplicates,
-          b2i(p.getReadMapped),
-          b2i(p.getReadPaired),
-          b2i(p.getReadPaired && p.getFirstOfPair),
-          b2i(p.getReadPaired && p.getSecondOfPair),
-          b2i(p.getReadPaired && p.getProperPair),
-          b2i(p.getReadPaired && p.getReadMapped && p.getMateMapped),
-          b2i(p.getReadPaired && p.getReadMapped && !p.getMateMapped),
-          b2i(mateMappedToDiffChromosome),
-          b2i(mateMappedToDiffChromosome && p.getMapq >= 5),
+          b2i(b(p.getReadMapped)),
+          b2i(b(p.getReadPaired)),
+          b2i(b(p.getReadPaired) && b(p.getFirstOfPair)),
+          b2i(b(p.getReadPaired) && b(p.getSecondOfPair)),
+          b2i(b(p.getReadPaired) && b(p.getProperPair)),
+          b2i(b(p.getReadPaired) && b(p.getReadMapped) && b(p.getMateMapped)),
+          b2i(b(p.getReadPaired) && b(p.getReadMapped) && b(!p.getMateMapped)),
+          b2i(b(mateMappedToDiffChromosome)),
+          b2i(b(mateMappedToDiffChromosome && p.getMapq >= 5)),
           p.getFailedVendorQualityChecks)
     }.aggregate((FlagStatMetrics.emptyFailedQuality, FlagStatMetrics.emptyPassedQuality))(
       seqOp = {
