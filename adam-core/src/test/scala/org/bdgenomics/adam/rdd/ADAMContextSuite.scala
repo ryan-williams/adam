@@ -313,6 +313,13 @@ class ADAMContextSuite extends ADAMFunSuite {
     }
   }
 
+  sparkTest("requirement should fire if we pass in two file names, but first is not a fastq") {
+    intercept[IllegalArgumentException] {
+      sc.loadAlignments("testFileName.sam",
+        filePath2Opt = Some("otherFileName.fq"))
+    }
+  }
+
   sparkTest("filter on load using the filter2 API") {
     val path = ClassLoader.getSystemClassLoader.getResource("bqsr1.vcf").getFile
 
