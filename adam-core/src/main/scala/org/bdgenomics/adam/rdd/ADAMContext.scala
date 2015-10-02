@@ -637,11 +637,27 @@ class ADAMContext(val sc: SparkContext) extends Serializable with Logging {
     recordGroupOpt: Option[String] = None,
     stringency: ValidationStringency = ValidationStringency.STRICT): RDD[AlignmentRecord] = LoadAlignmentRecords.time {
 
+    def checkArgsIfNotFastq {
+      require(filePath2Opt.isEmpty,
+        "Second file path %s was defined, but main file %s is not a FASTQ.".format(filePath2Opt.get,
+          filePath))
+
+      if (stringency != ValidationStringency.STRICT) {
+        log.warn("%s stringency passed on load. Stringency only applies to FASTQ loader, but file %s is not a FASTQ.".format(
+          stringency,
+          filePath))
+      }
+    }
+
     if (filePath.endsWith(".sam") ||
       filePath.endsWith(".bam")) {
+      checkArgsIfNotFastq
       log.info("Loading " + filePath + " as SAM/BAM and converting to AlignmentRecords. Projection is ignored.")
       loadBam(filePath)
     } else if (filePath.endsWith(".ifq")) {
+      // although interleaved fastq _is_ fastq, it has a different loading path,
+      // and thus this check applies
+      checkArgsIfNotFastq
       log.info("Loading " + filePath + " as interleaved FASTQ and converting to AlignmentRecords. Projection is ignored.")
       loadInterleavedFastq(filePath)
     } else if (filePath.endsWith(".fq") ||
@@ -650,13 +666,16 @@ class ADAMContext(val sc: SparkContext) extends Serializable with Logging {
       loadFastq(filePath, filePath2Opt, recordGroupOpt, stringency)
     } else if (filePath.endsWith(".fa") ||
       filePath.endsWith(".fasta")) {
+      checkArgsIfNotFastq
       log.info("Loading " + filePath + " as FASTA and converting to AlignmentRecords. Projection is ignored.")
       import ADAMContext._
       loadFasta(filePath, fragmentLength = 10000).toReads
     } else if (filePath.endsWith("contig.adam")) {
+      checkArgsIfNotFastq
       log.info("Loading " + filePath + " as Parquet of NucleotideContigFragment and converting to AlignmentRecords. Projection is ignored.")
       loadParquet[NucleotideContigFragment](filePath).toReads
     } else {
+      checkArgsIfNotFastq
       log.info("Loading " + filePath + " as Parquet of AlignmentRecords.")
       loadParquetAlignments(filePath, None, projection)
     }
