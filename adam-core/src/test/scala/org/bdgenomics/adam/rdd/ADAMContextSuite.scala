@@ -64,7 +64,7 @@ class ADAMContextSuite extends ADAMFunSuite {
     val bamReads: RDD[AlignmentRecord] = sc.loadAlignments(readsFilepath)
     //save it as an Adam file so we can test the Adam loader
     val bamReadsAdamFile = new File(Files.createTempDir(), "bamReads.adam")
-    bamReads.adamParquetSave(bamReadsAdamFile.getAbsolutePath)
+    bamReads.saveAsParquet(bamReadsAdamFile.getAbsolutePath)
     intercept[IllegalArgumentException] {
       val noReturnType = sc.loadParquet(bamReadsAdamFile.getAbsolutePath)
     }
@@ -335,7 +335,7 @@ class ADAMContextSuite extends ADAMFunSuite {
     assert(variants.count === 681)
 
     val loc = tempLocation()
-    variants.adamParquetSave(loc, 1024, 1024) // force more than one row group (block)
+    variants.saveAsParquet(loc, 1024, 1024) // force more than one row group (block)
 
     val pred: FilterPredicate = (LongColumn("start") === 16097631L)
     // the following only reads one row group

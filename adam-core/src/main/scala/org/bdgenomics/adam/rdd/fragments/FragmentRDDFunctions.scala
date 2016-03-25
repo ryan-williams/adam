@@ -31,7 +31,7 @@ class FragmentRDDFunctions(rdd: RDD[Fragment]) extends ADAMSequenceDictionaryRDD
     rdd.flatMap(converter.convertFragment)
   }
 
-  def getSequenceRecordsFromElement(elem: Fragment): Set[SequenceRecord] = {
+  def getSequenceRecords(elem: Fragment): Set[SequenceRecord] = {
     val alignments = asScalaBuffer(elem.getAlignments)
     alignments.flatMap(SequenceRecord.fromADAMRecord).toSet
   }

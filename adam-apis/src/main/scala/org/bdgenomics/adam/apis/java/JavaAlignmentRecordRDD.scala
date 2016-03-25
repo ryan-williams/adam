@@ -90,7 +90,7 @@ class JavaAlignmentRecordRDD(val jrdd: JavaRDD[AlignmentRecord],
     asSam: java.lang.Boolean,
     asSingleFile: java.lang.Boolean,
     isSorted: java.lang.Boolean) {
-    jrdd.rdd.adamSAMSave(filePath,
+    jrdd.rdd.saveAsSam(filePath,
       sd,
       rgd,
       asSam = asSam,

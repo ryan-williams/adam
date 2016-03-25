@@ -76,7 +76,7 @@ class Adam2Fastq(val args: Adam2FastqArgs) extends BDGSparkCommand[Adam2FastqArg
       reads = reads.repartition(args.repartition)
     }
 
-    reads.adamSaveAsFastq(
+    reads.saveAsFastq(
       args.outputPath,
       Option(args.outputPath2),
       outputOriginalBaseQualities = args.outputOriginalBaseQualities,
