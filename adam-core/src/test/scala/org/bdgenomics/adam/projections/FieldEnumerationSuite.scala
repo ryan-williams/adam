@@ -48,7 +48,7 @@ class FieldEnumerationSuite extends ADAMFunSuite with BeforeAndAfter {
     val bamReads = rRdd.rdd
     val sd = rRdd.sequences
     val rgd = rRdd.recordGroups
-    bamReads.saveAsParquet(TestSaveArgs(readsParquetFile.getAbsolutePath), sd, rgd)
+    bamReads.save(TestSaveArgs(readsParquetFile.getAbsolutePath), sd, rgd)
   }
 
   after {

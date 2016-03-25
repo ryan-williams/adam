@@ -171,13 +171,10 @@ class AlignmentRecordRDDFunctions(rdd: RDD[AlignmentRecord])
    *   aligned to.
    * @param rgd Record group dictionary describing the record groups these
    *   reads are from.
-   *
-   * @see adamSave
-   * @see adamAlignedRecordSave
    */
-  def saveAsParquet(args: ADAMSaveAnyArgs,
-                    sd: SequenceDictionary,
-                    rgd: RecordGroupDictionary) = {
+  private def saveParquet(args: ADAMSaveAnyArgs,
+                          sd: SequenceDictionary,
+                          rgd: RecordGroupDictionary) = {
     // convert sequence dictionary and record group dictionaries to avro form
     val contigs = sd.records
       .map(SequenceRecord.toADAMContig)
@@ -196,7 +193,7 @@ class AlignmentRecordRDDFunctions(rdd: RDD[AlignmentRecord])
       rgMetadata)
 
     // save rdd itself as parquet
-    rdd.saveAsParquet(args)
+    rdd.saveAsParquet(args: ADAMSaveAnyArgs)
   }
 
   /**
@@ -211,11 +208,7 @@ class AlignmentRecordRDDFunctions(rdd: RDD[AlignmentRecord])
    *   aligned to.
    * @param rgd Record group dictionary describing the record groups these
    *   reads are from.
-   *
-   * @see adamAlignedRecordSave
-   * @see adamSAMSave
-   * @see saveAsParquet
-   * @see adamSaveAsFastq
+   * @param isSorted If the output is sorted, this will modify the SAM/BAM header.
    */
   def save(
     args: ADAMSaveAnyArgs,
@@ -225,7 +218,7 @@ class AlignmentRecordRDDFunctions(rdd: RDD[AlignmentRecord])
 
     (maybeSaveBam(args, sd, rgd, isSorted) ||
       maybeSaveFastq(args) ||
-      { saveAsParquet(args, sd, rgd); true })
+      { saveParquet(args, sd, rgd); true })
   }
 
   /**
@@ -611,8 +604,6 @@ class AlignmentRecordRDDFunctions(rdd: RDD[AlignmentRecord])
    *
    * @param kmerLength The value of _k_ to use for cutting _k_-mers.
    * @return Returns an RDD containing k-mer/count pairs.
-   *
-   * @see adamCountQmers
    */
   def countKmers(kmerLength: Int): RDD[(String, Long)] = {
     rdd.flatMap(r => {

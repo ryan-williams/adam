@@ -46,13 +46,13 @@ class JavaAlignmentRecordRDD(val jrdd: JavaRDD[AlignmentRecord],
    * @param compressCodec Name of the compression codec to use.
    * @param disableDictionaryEncoding Whether or not to disable bit-packing.
    */
-  def adamSave(
+  def save(
     filePath: java.lang.String,
     blockSize: java.lang.Integer,
     pageSize: java.lang.Integer,
     compressCodec: CompressionCodecName,
     disableDictionaryEncoding: java.lang.Boolean) {
-    jrdd.rdd.saveAsParquet(
+    jrdd.rdd.save(
       new JavaSaveArgs(filePath,
         blockSize = blockSize,
         pageSize = pageSize,
@@ -67,9 +67,9 @@ class JavaAlignmentRecordRDD(val jrdd: JavaRDD[AlignmentRecord],
    *
    * @param filePath Path to save the file at.
    */
-  def adamSave(
+  def save(
     filePath: java.lang.String) {
-    jrdd.rdd.saveAsParquet(
+    jrdd.rdd.save(
       new JavaSaveArgs(filePath),
       sd,
       rgd)
@@ -85,7 +85,7 @@ class JavaAlignmentRecordRDD(val jrdd: JavaRDD[AlignmentRecord],
    * @param asSingleFile If true, saves output as a single file.
    * @param isSorted If the output is sorted, this will modify the header.
    */
-  def adamSAMSave(
+  def saveAsSam(
     filePath: java.lang.String,
     asSam: java.lang.Boolean,
     asSingleFile: java.lang.Boolean,

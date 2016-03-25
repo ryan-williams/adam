@@ -180,7 +180,7 @@ class ADAMContextSuite extends ADAMFunSuite {
     val loc = tempLocation()
     val path = new Path(loc)
 
-    saved.saveAsParquet(TestSaveArgs(loc),
+    saved.save(TestSaveArgs(loc),
       new SequenceDictionary(Vector(SequenceRecord.fromADAMContig(contig))),
       RecordGroupDictionary.empty)
     try {
