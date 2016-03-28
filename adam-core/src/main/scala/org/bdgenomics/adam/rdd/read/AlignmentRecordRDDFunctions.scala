@@ -17,20 +17,15 @@
  */
 package org.bdgenomics.adam.rdd.read
 
-import java.io.{
-  InputStream,
-  OutputStream,
-  StringWriter,
-  Writer
-}
+import java.io.{ InputStream, OutputStream, StringWriter, Writer }
+import java.lang.reflect.InvocationTargetException
+
 import htsjdk.samtools._
 import htsjdk.samtools.util.{ BinaryCodec, BlockCompressedOutputStream }
-import java.lang.reflect.InvocationTargetException
 import org.apache.avro.Schema
 import org.apache.avro.file.DataFileWriter
 import org.apache.avro.specific.{ SpecificDatumWriter, SpecificRecordBase }
-import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.fs.{ FileSystem, FileUtil, Path }
+import org.apache.hadoop.fs.{ FileSystem, Path }
 import org.apache.hadoop.io.LongWritable
 import org.apache.spark.SparkContext
 import org.apache.spark.broadcast.Broadcast
@@ -41,7 +36,7 @@ import org.bdgenomics.adam.algorithms.consensus.{ ConsensusGenerator, ConsensusG
 import org.bdgenomics.adam.converters.AlignmentRecordConverter
 import org.bdgenomics.adam.instrumentation.Timers._
 import org.bdgenomics.adam.models._
-import org.bdgenomics.adam.rdd.ADAMContext._
+import org.bdgenomics.adam.rdd.ADAMContext.{ rddToADAMRDD, javaListToList }
 import org.bdgenomics.adam.rdd.read.realignment.RealignIndels
 import org.bdgenomics.adam.rdd.read.recalibration.BaseQualityRecalibration
 import org.bdgenomics.adam.rdd.{ ADAMSaveAnyArgs, ADAMSequenceDictionaryRDDAggregator }
@@ -49,6 +44,7 @@ import org.bdgenomics.adam.rich.RichAlignmentRecord
 import org.bdgenomics.adam.util.MapTools
 import org.bdgenomics.formats.avro._
 import org.seqdoop.hadoop_bam.SAMRecordWritable
+
 import scala.annotation.tailrec
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
@@ -86,20 +82,24 @@ class AlignmentRecordRDDFunctions(rdd: RDD[AlignmentRecord])
 
     if (args.outputPath.endsWith(".sam")) {
       log.info("Saving data in SAM format")
-      rdd.saveAsSam(args.outputPath,
+      saveAsSam(
+        args.outputPath,
         sd,
         rgd,
         asSingleFile = args.asSingleFile,
-        isSorted = isSorted)
+        isSorted = isSorted
+      )
       true
     } else if (args.outputPath.endsWith(".bam")) {
       log.info("Saving data in BAM format")
-      rdd.saveAsSam(args.outputPath,
+      saveAsSam(
+        args.outputPath,
         sd,
         rgd,
         asSam = false,
         asSingleFile = args.asSingleFile,
-        isSorted = isSorted)
+        isSorted = isSorted
+      )
       true
     } else
       false
@@ -108,7 +108,7 @@ class AlignmentRecordRDDFunctions(rdd: RDD[AlignmentRecord])
   private[rdd] def maybeSaveFastq(args: ADAMSaveAnyArgs): Boolean = {
     if (args.outputPath.endsWith(".fq") || args.outputPath.endsWith(".fastq") ||
       args.outputPath.endsWith(".ifq")) {
-      rdd.saveAsFastq(args.outputPath, sort = args.sortFastqOutput)
+      saveAsFastq(args.outputPath, sort = args.sortFastqOutput)
       true
     } else
       false
@@ -172,9 +172,9 @@ class AlignmentRecordRDDFunctions(rdd: RDD[AlignmentRecord])
    * @param rgd Record group dictionary describing the record groups these
    *   reads are from.
    */
-  private def saveParquet(args: ADAMSaveAnyArgs,
-                          sd: SequenceDictionary,
-                          rgd: RecordGroupDictionary) = {
+  def saveAsParquet(args: ADAMSaveAnyArgs,
+                    sd: SequenceDictionary,
+                    rgd: RecordGroupDictionary) = {
     // convert sequence dictionary and record group dictionaries to avro form
     val contigs = sd.records
       .map(SequenceRecord.toADAMContig)
@@ -193,7 +193,7 @@ class AlignmentRecordRDDFunctions(rdd: RDD[AlignmentRecord])
       rgMetadata)
 
     // save rdd itself as parquet
-    rdd.saveAsParquet(args: ADAMSaveAnyArgs)
+    rdd.saveAsParquet(args)
   }
 
   /**
@@ -218,7 +218,7 @@ class AlignmentRecordRDDFunctions(rdd: RDD[AlignmentRecord])
 
     (maybeSaveBam(args, sd, rgd, isSorted) ||
       maybeSaveFastq(args) ||
-      { saveParquet(args, sd, rgd); true })
+      { saveAsParquet(args, sd, rgd); true })
   }
 
   /**
@@ -240,7 +240,7 @@ class AlignmentRecordRDDFunctions(rdd: RDD[AlignmentRecord])
   def saveAsSamString(sd: SequenceDictionary,
                       rgd: RecordGroupDictionary): String = {
     // convert the records
-    val (convertRecords: RDD[SAMRecordWritable], header: SAMFileHeader) = rdd.convertToSam(sd, rgd)
+    val (convertRecords: RDD[SAMRecordWritable], header: SAMFileHeader) = convertToSam(sd, rgd)
 
     val records = convertRecords.coalesce(1, shuffle = true).collect()
 
@@ -284,9 +284,12 @@ class AlignmentRecordRDDFunctions(rdd: RDD[AlignmentRecord])
     }
 
     // convert the records
-    val (convertRecords: RDD[SAMRecordWritable], header: SAMFileHeader) = rdd.convertToSam(sdFinal,
-      rgd,
-      isSorted)
+    val (convertRecords: RDD[SAMRecordWritable], header: SAMFileHeader) =
+      convertToSam(
+        sdFinal,
+        rgd,
+        isSorted
+      )
 
     // add keys to our records
     val withKey = convertRecords.keyBy(v => new LongWritable(v.get.getAlignmentStart))
@@ -386,7 +389,7 @@ class AlignmentRecordRDDFunctions(rdd: RDD[AlignmentRecord])
         binaryCodec.writeString(sw.toString, true, false)
 
         // write sequence dictionary
-        val ssd = header.getSequenceDictionary()
+        val ssd = header.getSequenceDictionary
         binaryCodec.writeInt(ssd.size())
         ssd.getSequences
           .toList
