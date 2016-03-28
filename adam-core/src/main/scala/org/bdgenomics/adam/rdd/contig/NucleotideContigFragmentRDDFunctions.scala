@@ -38,7 +38,8 @@ import scala.collection.JavaConversions._
 import scala.math.max
 import scala.Some
 
-class NucleotideContigFragmentRDDFunctions(rdd: RDD[NucleotideContigFragment]) extends ADAMSequenceDictionaryRDDAggregator[NucleotideContigFragment](rdd) {
+class NucleotideContigFragmentRDDFunctions(override val rdd: RDD[NucleotideContigFragment])
+    extends ADAMSequenceDictionaryRDDAggregator[NucleotideContigFragment] {
 
   /**
    * Converts an RDD of nucleotide contig fragments into reads. Adjacent contig fragments are

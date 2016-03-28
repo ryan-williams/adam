@@ -87,9 +87,9 @@ class ADAMRDDFunctions[T <% IndexedRecord: Manifest](rdd: RDD[T]) extends Serial
  * A class that provides functions to recover a sequence dictionary from a generic RDD of records.
  *
  * @tparam T Type contained in this RDD.
- * @param rdd RDD over which aggregation is supported.
  */
-abstract class ADAMSequenceDictionaryRDDAggregator[T](rdd: RDD[T]) extends Serializable with Logging {
+trait ADAMSequenceDictionaryRDDAggregator[T] extends Serializable with Logging {
+  def rdd: RDD[T]
 
   @transient lazy val sc: SparkContext = rdd.sparkContext
 
@@ -150,8 +150,8 @@ abstract class ADAMSequenceDictionaryRDDAggregator[T](rdd: RDD[T]) extends Seria
  * @tparam T A type defined in Avro that contains the reference identification fields.
  * @param rdd RDD over which aggregation is supported.
  */
-class ADAMSpecificRecordSequenceDictionaryRDDAggregator[T <% IndexedRecord: Manifest](rdd: RDD[T])
-    extends ADAMSequenceDictionaryRDDAggregator[T](rdd) {
+class ADAMSpecificRecordSequenceDictionaryRDDAggregator[T <% IndexedRecord: Manifest](override val rdd: RDD[T])
+    extends ADAMSequenceDictionaryRDDAggregator[T] {
 
   def getSequenceRecords(elem: T): Set[SequenceRecord] = {
     Set(SequenceRecord.fromSpecificRecord(elem))

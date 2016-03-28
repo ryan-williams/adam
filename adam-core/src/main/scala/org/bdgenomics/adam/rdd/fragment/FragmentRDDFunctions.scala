@@ -24,7 +24,8 @@ import org.bdgenomics.adam.rdd.ADAMSequenceDictionaryRDDAggregator
 import org.bdgenomics.formats.avro._
 import scala.collection.JavaConversions._
 
-class FragmentRDDFunctions(rdd: RDD[Fragment]) extends ADAMSequenceDictionaryRDDAggregator[Fragment](rdd) {
+class FragmentRDDFunctions(override val rdd: RDD[Fragment])
+    extends ADAMSequenceDictionaryRDDAggregator[Fragment] {
 
   def toReads: RDD[AlignmentRecord] = {
     val converter = new AlignmentRecordConverter

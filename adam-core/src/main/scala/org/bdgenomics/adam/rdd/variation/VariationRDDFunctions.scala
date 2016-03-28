@@ -27,7 +27,9 @@ import org.bdgenomics.adam.rich.RichVariant
 import org.bdgenomics.formats.avro.{ DatabaseVariantAnnotation, Genotype }
 import org.seqdoop.hadoop_bam._
 
-class VariantContextRDDFunctions(rdd: RDD[VariantContext]) extends ADAMSequenceDictionaryRDDAggregator[VariantContext](rdd) with Logging {
+class VariantContextRDDFunctions(override val rdd: RDD[VariantContext])
+    extends ADAMSequenceDictionaryRDDAggregator[VariantContext]
+    with Logging {
 
   /**
    * For a single variant context, returns sequence record elements.

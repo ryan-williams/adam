@@ -60,7 +60,7 @@ class ADAMContextSuite extends ADAMFunSuite {
     val bamReads: RDD[AlignmentRecord] = sc.loadAlignments(readsFilepath)
     //save it as an Adam file so we can test the Adam loader
     val bamReadsAdamFile = new File(Files.createTempDir(), "bamReads.adam")
-    new ADAMRDDFunctions(bamReads).saveAsParquet(bamReadsAdamFile.getAbsolutePath)
+    bamReads.saveAsParquet(bamReadsAdamFile.getAbsolutePath)
     intercept[IllegalArgumentException] {
       val noReturnType = sc.loadParquet(bamReadsAdamFile.getAbsolutePath)
     }

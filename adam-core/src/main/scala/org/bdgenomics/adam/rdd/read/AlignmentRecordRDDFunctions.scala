@@ -49,8 +49,9 @@ import scala.annotation.tailrec
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 
-class AlignmentRecordRDDFunctions(rdd: RDD[AlignmentRecord])
-    extends ADAMSequenceDictionaryRDDAggregator[AlignmentRecord](rdd) {
+class AlignmentRecordRDDFunctions(override val rdd: RDD[AlignmentRecord])
+    extends ADAMRDDFunctions(rdd)
+    with ADAMSequenceDictionaryRDDAggregator[AlignmentRecord] {
 
   /**
    * Calculates the subset of the RDD whose AlignmentRecords overlap the corresponding
@@ -174,7 +175,7 @@ class AlignmentRecordRDDFunctions(rdd: RDD[AlignmentRecord])
    */
   def saveAsParquet(args: ADAMSaveAnyArgs,
                     sd: SequenceDictionary,
-                    rgd: RecordGroupDictionary) = {
+                    rgd: RecordGroupDictionary): Unit = {
     // convert sequence dictionary and record group dictionaries to avro form
     val contigs = sd.records
       .map(SequenceRecord.toADAMContig)
@@ -193,7 +194,7 @@ class AlignmentRecordRDDFunctions(rdd: RDD[AlignmentRecord])
       rgMetadata)
 
     // save rdd itself as parquet
-    new ADAMRDDFunctions(rdd).saveAsParquet(args)
+    saveAsParquet(args)
   }
 
   /**
