@@ -79,8 +79,6 @@ class JavaAlignmentRecordRDD(val jrdd: JavaRDD[AlignmentRecord],
    * Saves this RDD to disk as a SAM/BAM file.
    *
    * @param filePath Path to save the file at.
-   * @param sd A dictionary describing the contigs this file is aligned against.
-   * @param rgd A dictionary describing the read groups in this file.
    * @param asSam If true, saves as SAM. If false, saves as BAM.
    * @param asSingleFile If true, saves output as a single file.
    * @param isSorted If the output is sorted, this will modify the header.
