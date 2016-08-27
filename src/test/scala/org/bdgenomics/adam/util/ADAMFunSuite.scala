@@ -21,7 +21,6 @@ import java.io.File
 import java.nio.file.Files
 
 import com.google.common.io.Resources
-
 import org.bdgenomics.utils.misc.SparkFunSuite
 
 import scala.io.Source
@@ -36,7 +35,8 @@ trait ADAMFunSuite extends SparkFunSuite {
     "spark.kryo.registrationRequired" -> "true"
   )
 
-  def resourcePath(path: String) = ClassLoader.getSystemClassLoader.getResource(path).getFile
+  def resourcePath(path: String) = testFile(path)
+
   def tmpFile(path: String) = Files.createTempDirectory("").toAbsolutePath.toString + "/" + path
 
   /**

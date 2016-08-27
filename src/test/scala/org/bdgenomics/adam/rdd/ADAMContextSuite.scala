@@ -311,7 +311,7 @@ class ADAMContextSuite extends ADAMFunSuite {
 
   (1 to 4) foreach { testNumber =>
     val inputName = "interleaved_fastq_sample%d.ifq".format(testNumber)
-    val path = ClassLoader.getSystemClassLoader.getResource(inputName).getFile
+    val path = resourcePath(inputName)
 
     sparkTest("import records from interleaved FASTQ: %d".format(testNumber)) {
 
@@ -335,7 +335,7 @@ class ADAMContextSuite extends ADAMFunSuite {
 
   (1 to 4) foreach { testNumber =>
     val inputName = "fastq_sample%d.fq".format(testNumber)
-    val path = ClassLoader.getSystemClassLoader.getResource(inputName).getFile
+    val path = resourcePath(inputName)
 
     sparkTest("import records from single ended FASTQ: %d".format(testNumber)) {
 
